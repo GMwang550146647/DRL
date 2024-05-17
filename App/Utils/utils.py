@@ -3,6 +3,7 @@ import re
 import ray
 import pandas as pd
 
+
 def get_all_pattern_files(path, pattern, rel=False):
     target_files = []
 
@@ -32,6 +33,7 @@ def get_all_pattern_files(path, pattern, rel=False):
         abs_search(path)
     return target_files
 
+
 def concat_df_tree(list_df):
     def split_and_concat(start, end):
         if start >= end:
@@ -45,6 +47,7 @@ def concat_df_tree(list_df):
     result = split_and_concat(0, len(list_df) - 1)
     result.reset_index(inplace=True, drop=True)
     return result
+
 
 def get_all_packages(path, pattern=".py$"):
     files = get_all_pattern_files(path, pattern, rel=True)
@@ -62,12 +65,14 @@ def convert2dc(Obj, *o_args, **o_kwargs):
 
     return inner
 
+
 def convert2dc_sv(Obj, *o_args, **o_kwargs):
     @ray.remote
     def inner(*args, **kwargs):
         return Obj(*o_args, **o_kwargs).run(*args, **kwargs)
 
     return inner
+
 
 # def convert2dc(Obj, *o_args, **o_kwargs):
 #     @ray.remote

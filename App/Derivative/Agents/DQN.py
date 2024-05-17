@@ -2,6 +2,7 @@ from App.Base.AgentBase import AgentBase
 
 import random
 import gym
+import os
 import numpy as np
 import collections
 from tqdm import tqdm
@@ -9,23 +10,54 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
+class Qnet(torch.nn.Module):
+    ''' 只有一层隐藏层的Q网络 '''
+
+    def __init__(self, state_dim, hidden_dim, action_dim):
+        super(Qnet, self).__init__()
+        self.fc1 = torch.nn.Linear(state_dim, hidden_dim)
+        self.fc2 = torch.nn.Linear(hidden_dim, action_dim)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))  # 隐藏层使用ReLU激活函数
+        return self.fc2(x)
+
 
 class DQN(AgentBase):
     ''' DQN算法 '''
 
-    def __init__(self,state_dim, hidden_dim, action_dim, learning_rate, gamma,epsilon, target_update, device):
+    def __init__(
+            self, state_dim, hidden_dim, action_dim, learning_rate,gamma, epsilon, target_update, device, save_dir, model_dir,
+            *args, **kwargs
+    ):
+        """
+
+        :param state_dim: dim of states
+        :param hidden_dim: hidden layers
+        :param action_dim: dim of actions
+        :param learning_rate:
+        :param gamma:
+        :param epsilon:
+        :param target_update: update frequency of target_network
+        :param device:
+        """
         super(DQN, self).__init__()
+        self.SAVE_DIR = save_dir
+        self.MODEL_DIR = model_dir
+        self.MODEL_FILE = os.path.join(self.MODEL_DIR, "dqn_net.pth")
+        self.OPTIMIZER_FILE = os.path.join(self.MODEL_DIR, "opt.pth")
         self.action_dim = action_dim
-        self.q_net = Qnet(state_dim, hidden_dim,self.action_dim).to(device)  # Q网络
+        self.q_net = Qnet(state_dim, hidden_dim, self.action_dim).to(device)  # Q网络
         # 目标网络
-        self.target_q_net = Qnet(state_dim, hidden_dim,self.action_dim).to(device)
+        self.target_q_net = Qnet(state_dim, hidden_dim, self.action_dim).to(device)
         # 使用Adam优化器
-        self.optimizer = torch.optim.Adam(self.q_net.parameters(),lr=learning_rate)
+        self.optimizer = torch.optim.Adam(self.q_net.parameters(), lr=learning_rate)
         self.gamma = gamma  # 折扣因子
         self.epsilon = epsilon  # epsilon-贪婪策略
         self.target_update = target_update  # 目标网络更新频率
         self.count = 0  # 计数器,记录更新次数
         self.device = device
+        self.load_model()
 
     def take_action(self, state, *args, **kwargs):  # epsilon-贪婪策略采取动作
         if np.random.random() < self.epsilon:
@@ -55,35 +87,13 @@ class DQN(AgentBase):
             self.target_q_net.load_state_dict(self.q_net.state_dict())  # 更新目标网络
         self.count += 1
 
+    def save_model(self):
 
-class ReplayBuffer:
-    ''' 经验回放池 '''
+        torch.save(self.q_net.state_dict(), self.MODEL_FILE)
+        torch.save(self.optimizer.state_dict(), self.OPTIMIZER_FILE)
 
-    def __init__(self, capacity):
-        self.buffer = collections.deque(maxlen=capacity)  # 队列,先进先出
-
-    def add(self, state, action, reward, next_state, done):  # 将数据加入buffer
-        self.buffer.append((state, action, reward, next_state, done))
-
-    def sample(self, batch_size):  # 从buffer中采样数据,数量为batch_size
-        transitions = random.sample(self.buffer, batch_size)
-        state, action, reward, next_state, done = zip(*transitions)
-        return np.array(state), action, reward, np.array(next_state), done
-
-    def size(self):  # 目前buffer中数据的数量
-        return len(self.buffer)
-
-
-# %%
-
-class Qnet(torch.nn.Module):
-    ''' 只有一层隐藏层的Q网络 '''
-
-    def __init__(self, state_dim, hidden_dim, action_dim):
-        super(Qnet, self).__init__()
-        self.fc1 = torch.nn.Linear(state_dim, hidden_dim)
-        self.fc2 = torch.nn.Linear(hidden_dim, action_dim)
-
-    def forward(self, x):
-        x = F.relu(self.fc1(x))  # 隐藏层使用ReLU激活函数
-        return self.fc2(x)
+    def load_model(self):
+        if os.path.exists(self.MODEL_FILE):
+            # self.q_net = self.build_nn(self.layer_sizes)
+            self.optimizer.load_state_dict(torch.load(self.OPTIMIZER_FILE))
+            self.q_net.load_state_dict(torch.load(self.MODEL_FILE))

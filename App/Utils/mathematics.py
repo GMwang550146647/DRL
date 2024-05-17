@@ -36,6 +36,7 @@ def my_sigmoid(x, threshold):
     levels = [0, 0.1, 0.25, 0.5, 1]
     return sigmoid_steps(x, steps, levels)
 
+
 def my_sigmoid_ori(x, threshold):
     def sigmoid(x, up_down=0., scale_x=1., scale_y=1.):
         """

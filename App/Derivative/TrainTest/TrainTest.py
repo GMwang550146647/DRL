@@ -5,10 +5,15 @@ import numpy as np
 import torch
 import collections
 import random
+import time
+import logging
 
 
 class TrainTest(TrainTestBase):
-    def __init__(self, agent, env, num_episodes, replay_buffer_cap, minimal_size=128, batch_size=16, on_policy=False):
+    def __init__(
+            self, agent, env, num_episodes, replay_buffer_cap, minimal_size=128, batch_size=16, on_policy=False,
+            *args, **kwargs
+    ):
         super().__init__(agent, env)
         self._env = env
         self._agent = agent
@@ -17,6 +22,10 @@ class TrainTest(TrainTestBase):
         self._minimal_size = minimal_size
         self._batch_size = batch_size
         self._on_policy = on_policy
+
+        random.seed(0)
+        np.random.seed(0)
+        torch.manual_seed(0)
 
     def train_on_policy_agent(self, env, agent, num_episodes):
         """
@@ -34,7 +43,8 @@ class TrainTest(TrainTestBase):
                     transition_dict = {'states': [], 'actions': [], 'next_states': [], 'rewards': [], 'dones': []}
                     state = env.reset()[0]
                     done = False
-                    while not done:
+                    truncated = False
+                    while (not done) and (not truncated):
                         action = agent.take_action(state)
                         next_state, reward, done, truncated, _ = env.step(action)
                         transition_dict['states'].append(state)
@@ -50,6 +60,7 @@ class TrainTest(TrainTestBase):
                         pbar.set_postfix({'episode': '%d' % (num_episodes / 10 * i + i_episode + 1),
                                           'return': '%.3f' % np.mean(return_list[-10:])})
                     pbar.update(1)
+            self._agent.save_model()
         return return_list
 
     def train_off_policy_agent(self, env, agent, num_episodes, replay_buffer, minimal_size, batch_size):
@@ -67,7 +78,8 @@ class TrainTest(TrainTestBase):
                     episode_return = 0
                     state = env.reset()[0]
                     done = False
-                    while not done:
+                    truncated = False
+                    while (not done) and (not truncated):
                         action = agent.take_action(state)
                         next_state, reward, done, truncated, _ = env.step(action)
                         replay_buffer.add(state, action, reward, next_state, done)
@@ -82,6 +94,7 @@ class TrainTest(TrainTestBase):
                         pbar.set_postfix({'episode': '%d' % (num_episodes / 10 * i + i_episode + 1),
                                           'return': '%.3f' % np.mean(return_list[-10:])})
                     pbar.update(1)
+            self._agent.save_model()
         return return_list
 
     def train(self, *args, **kwargs):
@@ -91,8 +104,18 @@ class TrainTest(TrainTestBase):
             self.train_off_policy_agent(
                 self._env, self._agent, self._num_episodes, self._replay_buffer, self._minimal_size, self._batch_size)
 
-    def test(self, *args, **kwargs):
-        pass
+    def test(self, epochs=10, time_interval=0.01, *args, **kwargs):
+        for i in tqdm(range(epochs)):
+            truncated = False
+            state, done, rew = self._env.reset()[0], False, 0
+            while (not done and not truncated):
+                self._env.render()
+                action = self._agent.take_action(state)
+                state, reward, done, truncated, _ = self._env.step(action)
+                rew += reward
+                time.sleep(time_interval)
+            logging.info(f"Epoch {i + 1} : reward -> {rew}")
+            rew = 0
 
 
 class ReplayBuffer:
