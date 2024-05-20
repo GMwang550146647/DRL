@@ -1,11 +1,9 @@
-
-
 class TrainTestBase():
-    def __init__(self,agent,env,*args,**kwargs):
+    def __init__(self, agent, env, *args, **kwargs):
         self._agent = agent
         self._env = env
 
-    def train(self,*args,**kwargs):
+    def train(self, *args, **kwargs):
         """
         Train Your Agent
         :param args:
@@ -14,7 +12,7 @@ class TrainTestBase():
         """
         raise NotImplementedError
 
-    def test(self,*args,**kwargs):
+    def test(self, *args, **kwargs):
         """
         Test Your Agent
         :param args:
@@ -22,4 +20,3 @@ class TrainTestBase():
         :return:
         """
         raise NotImplementedError
-

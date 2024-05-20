@@ -1,9 +1,8 @@
-
 class AgentBase():
     def __init__(self):
         pass
 
-    def take_action(self,state,*args,**kwargs):
+    def take_action(self, state, *args, **kwargs):
         """
         return Action According to given state
         :param state:
@@ -13,7 +12,7 @@ class AgentBase():
         """
         raise NotImplementedError
 
-    def update(self,transition_dict,*args,**kwargs):
+    def update(self, transition_dict, *args, **kwargs):
         """
         Update Params According to given transition_dict to Modify your Agent
         :param transition_dict:

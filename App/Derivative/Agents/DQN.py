@@ -31,7 +31,6 @@ class DQN(AgentBase):
             *args, **kwargs
     ):
         """
-
         :param state_dim: dim of states
         :param hidden_dim: hidden layers
         :param action_dim: dim of actions

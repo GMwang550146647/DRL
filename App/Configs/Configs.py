@@ -22,4 +22,3 @@ APP_CONFIGS_FILE = os.path.join(APP_CONFIGS_DIR, 'AppConfigs.tsv')
 
 df_app_info = pd.read_csv(APP_CONFIGS_FILE, index_col=USER_COL, sep='\t')
 CUR_USER, DT_CONFIGS_APP = list(df_app_info.loc[df_app_info[SELECTED_COL], :].T.to_dict().items())[0]
-

@@ -4,8 +4,9 @@ import importlib
 from App.Configs.Configs import PACKAGE_PATH
 from App.Utils.utils import get_all_packages
 
+
 class ControllerBase():
-    def __init__(self,*args,**kwargs):
+    def __init__(self, *args, **kwargs):
         self.PACKAGE_PATH = PACKAGE_PATH
 
     def _import_module(self, func_name):
