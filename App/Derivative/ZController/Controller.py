@@ -7,7 +7,6 @@ from App.Configs.Configs import *
 from App.Utils.utils import *
 
 
-
 class Controller(ControllerBase):
     def __init__(
             self, info_level=logging.INFO,
@@ -34,7 +33,7 @@ class Controller(ControllerBase):
         os.makedirs(self.SAVE_MODEL_DIR, exist_ok=True)
         self._load_objects()
         self.logger.setLevel(info_level)
-        logging.info("Task Activated")
+        logging.info(f"Task Activated : AGENT({self.AGENT_NAME}) | ENV({self.ENV_NAME}) | TT_NAME({self.TT_NAME})")
 
     def _load_objects(self):
         self.AGENT = self._import_module(self.AGENT_NAME)
@@ -46,11 +45,11 @@ class Controller(ControllerBase):
 
     def run(self):
         if self.TRAIN_MODE:
-            env = self.ENV(save_dir = self.OUTPUT_DIR,**self.ENV_CONFIGS)
+            env = self.ENV(save_dir=self.OUTPUT_DIR, **self.ENV_CONFIGS)
         else:
-            env = self.ENV(render_mode = 'human',save_dir = self.OUTPUT_DIR,**self.ENV_CONFIGS)
-        agent = self.AGENT(save_dir = self.OUTPUT_DIR,model_dir = self.SAVE_MODEL_DIR,**self.AGENT_CONFIG)
-        tt = self.TT(agent=agent,env = env,save_dir = self.OUTPUT_DIR,**self.TT_CONFIGS)
+            env = self.ENV(render_mode='human', save_dir=self.OUTPUT_DIR, **self.ENV_CONFIGS)
+        agent = self.AGENT(save_dir=self.OUTPUT_DIR, model_dir=self.SAVE_MODEL_DIR, **self.AGENT_CONFIG)
+        tt = self.TT(agent=agent, env=env, save_dir=self.OUTPUT_DIR, **self.TT_CONFIGS)
         if self.TRAIN_MODE:
             tt.train()
         else:
