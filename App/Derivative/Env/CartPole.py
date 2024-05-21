@@ -3,8 +3,8 @@ from App.Base.EnvBase import EnvBase
 
 
 class CartPole(EnvBase):
-    def __init__(self, render_mode=None, *args, **kwargs):
-        super(CartPole, self).__init__(render_mode)
+    def __init__(self, render_mode=None,save_dir=None, *args, **kwargs):
+        super(CartPole, self).__init__(render_mode,save_dir)
 
     def __new__(cls, *args, **kwargs):
         env_name = 'CartPole-v1'
@@ -14,3 +14,6 @@ class CartPole(EnvBase):
         else:
             env = gym.make(env_name)
         return env
+
+    def display(self,*args,**kwargs):
+        pass

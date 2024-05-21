@@ -73,12 +73,14 @@ class TrainTest(TrainTestBase):
         """
         return_list = []
         for i in range(10):
+            t0 = time.time()
             with tqdm(total=int(num_episodes / 10), desc='Iteration %d' % i) as pbar:
                 for i_episode in range(int(num_episodes / 10)):
                     episode_return = 0
                     state = env.reset()[0]
                     done = False
                     truncated = False
+
                     while (not done) and (not truncated):
                         action = agent.take_action(state)
                         next_state, reward, done, truncated, _ = env.step(action)
@@ -89,11 +91,13 @@ class TrainTest(TrainTestBase):
                             b_s, b_a, b_r, b_ns, b_d = replay_buffer.sample(batch_size)
                             transition_dict = {'states': b_s, 'actions': b_a, 'next_states': b_ns, 'rewards': b_r,'dones': b_d}
                             agent.update(transition_dict)
+
                     return_list.append(episode_return)
                     if (i_episode + 1) % 10 == 0:
                         pbar.set_postfix({'episode': '%d' % (num_episodes / 10 * i + i_episode + 1),
                                           'return': '%.3f' % np.mean(return_list[-10:])})
                     pbar.update(1)
+            print(f"Used {time.time() - t0} s")
             self._agent.save_model()
         return return_list
 
@@ -114,6 +118,7 @@ class TrainTest(TrainTestBase):
                 state, reward, done, truncated, _ = self._env.step(action)
                 rew += reward
                 time.sleep(time_interval)
+            self._env.display()
             logging.info(f"Epoch {i + 1} : reward -> {rew}")
             rew = 0
 

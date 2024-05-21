@@ -8,19 +8,24 @@ import numpy as np
 from App.Configs.Configs import DATA_PATH
 from App.Base.EnvBase import EnvBase
 from App.Utils.utils import get_all_pattern_files
+from App.Utils.parallel_computing import MultiProcess
 from App.Configs.ConfigsFutures import *
-
+from App.Base.PlotBase import PlotBase
 
 class EnvFutures(EnvBase):
-    def __init__(self, file_pattern, data_random_mode=False, load_when_use=True, render_mode=None, *args, **kwargs):
-        super(EnvFutures, self).__init__(render_mode)
+    def __init__(
+            self, file_pattern, data_random_mode=False, load_when_use=True, render_mode=None,save_dir=None,
+            *args, **kwargs
+    ):
+        super(EnvFutures, self).__init__(render_mode,save_dir,*args,**kwargs)
         self._data_path = DATA_PATH
         self._load_when_use = load_when_use
+        self._render_mode = render_mode
         self._data_random_mode = data_random_mode
         self._files = get_all_pattern_files(self._data_path, file_pattern)
         random.shuffle(self._files)
         self._N_FILES = len(self._files)
-        self._lt_df_data = [pd.read_csv(file_i) for file_i in self._files] if load_when_use else []
+        self._lt_dt_data = MultiProcess.multi_process(self._load_convert_dfdata2dict,self._files) if not load_when_use else []
         self._CUR_FILE_IDX = 0
         self._LONG_SHORT_MODE = 0
 
@@ -32,7 +37,6 @@ class EnvFutures(EnvBase):
             self._CUR_FILE_IDX = np.random.randint(0, self._N_FILES)
         else:
             self._CUR_FILE_IDX = (self._CUR_FILE_IDX + 1) % self._N_FILES
-        logging.info(f"CurFile({self._CUR_FILE_IDX}) : {self._files[self._CUR_FILE_IDX]}")
         return self._CUR_FILE_IDX
 
     def _get_next_file_data(self):
@@ -41,10 +45,9 @@ class EnvFutures(EnvBase):
         data = None
         try:
             if self._load_when_use:
-                df_data = pd.read_csv(self._files[next_idx])
+                data = self._load_convert_dfdata2dict(self._files[next_idx])
             else:
-                df_data = self._lt_df_data[next_idx]
-            data = list(df_data.T.to_dict().values())
+                data = self._lt_dt_data[next_idx]
 
         except Exception as err:
             flag_success = False
@@ -53,6 +56,10 @@ class EnvFutures(EnvBase):
             return self._get_next_file_data()
         else:
             return data
+
+    def _load_convert_dfdata2dict(self,file_name):
+        df_data = pd.read_csv(file_name)
+        return list(df_data.T.to_dict().values())
 
     def _get_next_data(self):
         data2return = self._lt_cur_data[self._cur_data_idx]
@@ -64,6 +71,8 @@ class EnvFutures(EnvBase):
         self._lt_cur_data = self._get_next_file_data()
         self._cur_data_idx = 0
         self._pre_action = 0
+        if self._render_mode:
+            self.lt_action = []
         return self.step(0)[0],None
 
     def step(self, action, *args, **kwargs):
@@ -93,35 +102,67 @@ class EnvFutures(EnvBase):
         state = [cur_data[key_i] for key_i in
                  [SPECIAL_TIME_COL, ASK_VIB_COL, BID_VIB_COL, DIFF_AB_COL, HIGH_COL, LOW_COL, CLOSE_COL]]
         state = [action] + state
+        fee = cur_data[FEE_COL] *5
         if action == 1:
             if self._pre_action == 1:
                 # 1.Keep Long Pos
                 reward = cur_data[BID_VIB_COL]
             elif self._pre_action == 2:
                 # 2.Change From Short To Long Pos
-                reward = -cur_data[ASK_VIB_COL] - cur_data[FEE_COL] - cur_data[DIFF_AB_COL] - cur_data[FEE_COL]
+                reward = -cur_data[ASK_VIB_COL] - fee - cur_data[DIFF_AB_COL] - fee
             else:
                 # 3.Open Long Pos
-                reward = -cur_data[DIFF_AB_COL] - cur_data[FEE_COL]
+                reward = -cur_data[DIFF_AB_COL] - fee
         elif action == 2:
             if self._pre_action == 1:
                 # 4.Change From Long To Short Pos
-                reward = cur_data[BID_VIB_COL] - cur_data[FEE_COL] - cur_data[DIFF_AB_COL] - cur_data[FEE_COL]
+                reward = cur_data[BID_VIB_COL] - fee - cur_data[DIFF_AB_COL] - fee
             elif self._pre_action == 2:
                 # 5.Keep Short Pos
                 reward = -cur_data[ASK_VIB_COL]
             else:
                 # 6.Open Short Pos
-                reward = -cur_data[DIFF_AB_COL] - cur_data[FEE_COL]
+                reward = -cur_data[DIFF_AB_COL] - fee
         else:
             if self._pre_action == 1:
                 # 7.Close Long Pos
-                reward = cur_data[BID_VIB_COL] - cur_data[FEE_COL]
+                reward = cur_data[BID_VIB_COL] - fee
             elif self._pre_action == 2:
                 # 8.CLose Short Pos
-                reward = -cur_data[ASK_VIB_COL] - cur_data[FEE_COL]
+                reward = -cur_data[ASK_VIB_COL] - fee
             else:
                 # 9.Keep 0 Pos
                 reward = 0
         self._pre_action = action
+        if self._render_mode:
+            self.lt_action.append((action,reward))
         return state, reward, done, None, None
+
+    def render(self,*args,**kwargs):
+        pass
+
+    def display(self, *args, **kwargs):
+        cur_file = self._files[self._CUR_FILE_IDX].split("/")[-1].split(".")[0]
+        cur_data = self._lt_cur_data
+        buy_vol = pd.Series([(1 if a_i[0] == 1 else 0) for a_i in self.lt_action])
+        sell_vol = pd.Series([(1 if a_i[0] == 2 else 0) for a_i in self.lt_action])
+        rewards = pd.Series([a_i[1] for a_i in self.lt_action]).cumsum()
+        update_time = pd.Series([item[UPDATE_TIME_COL] for item in cur_data])
+        last_price = pd.Series([item[LAST_PRICE_COL] for item in cur_data])
+        new_df_data = pd.DataFrame()
+        new_df_data[UPDATE_TIME_COL] = update_time
+        new_df_data[LAST_PRICE_COL] = last_price
+        new_df_data["BUY_VOL"] = buy_vol
+        new_df_data["SELL_VOL"] = sell_vol
+        new_df_data["POS_REWARDS"] = rewards
+        new_df_data["NEG_REWARDS"] = rewards
+        new_df_data.loc[new_df_data["POS_REWARDS"]<0,"POS_REWARDS"]=0
+        new_df_data.loc[new_df_data["NEG_REWARDS"]>0,"NEG_REWARDS"]=0
+        new_df_data['NEG_REWARDS'] = -new_df_data['NEG_REWARDS']
+        plot_cols = [LAST_PRICE_COL]
+        bar_cols = ["BUY_VOL","SELL_VOL"]
+        PlotBase().plot_bar_curve(new_df_data,plot_cols,bar_cols,self.OUTPUT_PATH,title=f"{cur_file}")
+
+        plot_cols = [LAST_PRICE_COL]
+        bar_cols = ["POS_REWARDS","NEG_REWARDS"]
+        PlotBase().plot_bar_curve(new_df_data,plot_cols,bar_cols,self.OUTPUT_PATH,title=f"{cur_file}_reward")

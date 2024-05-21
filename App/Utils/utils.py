@@ -129,69 +129,6 @@ def merge(intervals):
     return merged
 
 
-class MyDict():
-    def __init__(self, init_dict=None, *args, **kwargs):
-        if not init_dict:
-            self._keys = []
-            self._vals = []
-            self._size = 0
-        else:
-            self._keys = list(init_dict.keys())
-            self._vals = list(init_dict.values())
-            self._size = len(init_dict)
-
-    def __len__(self):
-        return self._size
-
-    def __getitem__(self, key):
-        if self._size > 0:
-            t_id = self._keys.index(key)
-            return self._vals[t_id]
-        else:
-            return None
-
-    def __setitem__(self, key, value):
-        if key not in self._keys:
-            self._keys.append(key)
-            self._vals.append(value)
-            self._size += 1
-        else:
-            t_id = self._keys.index(key)
-            self._vals[t_id] = value
-
-    def __delitem__(self, key):
-        t_id = self._keys.index(key)
-        self._keys.pop(t_id)
-        self._vals.pop(t_id)
-        self._size -= 1
-
-    def __str__(self):
-        print_str = [f'{key} : {val}' for key, val in zip(self._keys, self._vals)]
-        print_str = "{" + " , ".join(print_str) + "}"
-        return print_str
-
-    def items(self):
-        return self._keys, self._vals
-
-    def keys(self):
-        return self._keys
-
-    def values(self):
-        return self._vals
-
-    def to_dict(self):
-        return {key_i: val_i for key_i, val_i in zip(self.items())}
-
-    @staticmethod
-    def to_dataframe(l_md):
-        if l_md:
-            idx = l_md[0].keys()
-            vals = [l_md_i.values() for l_md_i in l_md]
-            return pd.DataFrame(vals, columns=idx)
-        else:
-            return None
-
-
 def concat_df_tree(list_df):
     def split_and_concat(start, end):
         if start >= end:
