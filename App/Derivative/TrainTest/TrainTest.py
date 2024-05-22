@@ -73,7 +73,6 @@ class TrainTest(TrainTestBase):
         """
         return_list = []
         for i in range(10):
-            t0 = time.time()
             with tqdm(total=int(num_episodes / 10), desc='Iteration %d' % i) as pbar:
                 for i_episode in range(int(num_episodes / 10)):
                     episode_return = 0
@@ -97,7 +96,6 @@ class TrainTest(TrainTestBase):
                         pbar.set_postfix({'episode': '%d' % (num_episodes / 10 * i + i_episode + 1),
                                           'return': '%.3f' % np.mean(return_list[-10:])})
                     pbar.update(1)
-            print(f"Used {time.time() - t0} s")
             self._agent.save_model()
         return return_list
 

@@ -102,7 +102,7 @@ class EnvFutures(EnvBase):
         state = [cur_data[key_i] for key_i in
                  [SPECIAL_TIME_COL, ASK_VIB_COL, BID_VIB_COL, DIFF_AB_COL, HIGH_COL, LOW_COL, CLOSE_COL]]
         state = [action] + state
-        fee = cur_data[FEE_COL] *5
+        fee = cur_data[FEE_COL] * 5
         if action == 1:
             if self._pre_action == 1:
                 # 1.Keep Long Pos
@@ -156,13 +156,13 @@ class EnvFutures(EnvBase):
         new_df_data["SELL_VOL"] = sell_vol
         new_df_data["POS_REWARDS"] = rewards
         new_df_data["NEG_REWARDS"] = rewards
-        new_df_data.loc[new_df_data["POS_REWARDS"]<0,"POS_REWARDS"]=0
-        new_df_data.loc[new_df_data["NEG_REWARDS"]>0,"NEG_REWARDS"]=0
+        new_df_data.loc[new_df_data["POS_REWARDS"] < 0, "POS_REWARDS"] = 0
+        new_df_data.loc[new_df_data["NEG_REWARDS"] > 0, "NEG_REWARDS"] = 0
         new_df_data['NEG_REWARDS'] = -new_df_data['NEG_REWARDS']
         plot_cols = [LAST_PRICE_COL]
-        bar_cols = ["BUY_VOL","SELL_VOL"]
-        PlotBase().plot_bar_curve(new_df_data,plot_cols,bar_cols,self.OUTPUT_PATH,title=f"{cur_file}")
+        bar_cols = ["BUY_VOL", "SELL_VOL"]
+        PlotBase().plot_bar_curve(new_df_data, plot_cols, bar_cols, self.OUTPUT_PATH, title=f"{cur_file}")
 
         plot_cols = [LAST_PRICE_COL]
-        bar_cols = ["POS_REWARDS","NEG_REWARDS"]
-        PlotBase().plot_bar_curve(new_df_data,plot_cols,bar_cols,self.OUTPUT_PATH,title=f"{cur_file}_reward")
+        bar_cols = ["POS_REWARDS", "NEG_REWARDS"]
+        PlotBase().plot_bar_curve(new_df_data, plot_cols, bar_cols, self.OUTPUT_PATH, title=f"{cur_file}_reward")

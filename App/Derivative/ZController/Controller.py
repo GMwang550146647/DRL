@@ -1,6 +1,6 @@
-import importlib
 import logging
 import datetime
+import torch
 
 from App.Base.ControllerBase import ControllerBase
 from App.Configs.Configs import *
@@ -33,7 +33,7 @@ class Controller(ControllerBase):
         os.makedirs(self.SAVE_MODEL_DIR, exist_ok=True)
         self._load_objects()
         self.logger.setLevel(info_level)
-        logging.info(f"Task Activated : AGENT({self.AGENT_NAME}) | ENV({self.ENV_NAME}) | TT_NAME({self.TT_NAME})")
+        logging.info(f"Task Activated : AGENT({self.AGENT_NAME}) | ENV({self.ENV_NAME}) | TT_NAME({self.TT_NAME}) | CUDA({torch.cuda.is_available()})")
 
     def _load_objects(self):
         self.AGENT = self._import_module(self.AGENT_NAME)
