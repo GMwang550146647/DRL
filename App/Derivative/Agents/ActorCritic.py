@@ -54,9 +54,9 @@ class ActorCritic(AgentBase):
         self.SAVE_DIR = save_dir
         self.MODEL_DIR = model_dir
         self.MODEL_FILE_ACTOR = os.path.join(self.MODEL_DIR, "actor_net.pth")
-        self.MODEL_FILE_CRITICS = os.path.join(self.MODEL_DIR, "critics_net.pth")
-        self.OPTIMIZER_ACTOR_FILE = os.path.join(self.MODEL_DIR, "opt.pth")
-        self.OPTIMIZER_CRITIC_FILE = os.path.join(self.MODEL_DIR, "opt.pth")
+        self.MODEL_FILE_CRITIC = os.path.join(self.MODEL_DIR, "critic_net.pth")
+        self.OPTIMIZER_ACTOR_FILE = os.path.join(self.MODEL_DIR, "opt_actor.pth")
+        self.OPTIMIZER_CRITIC_FILE = os.path.join(self.MODEL_DIR, "opt_critic.pth")
         self.action_dim = action_dim
         self.actor = PolicyNet(state_dim, hidden_dim, self.action_dim).to(device)
         self.critic = ValueNet(state_dim, hidden_dim).to(device)
@@ -98,13 +98,13 @@ class ActorCritic(AgentBase):
 
     def save_model(self):
         torch.save(self.actor.state_dict(), self.MODEL_FILE_ACTOR)
-        torch.save(self.critic.state_dict(), self.MODEL_FILE_CRITICS)
+        torch.save(self.critic.state_dict(), self.MODEL_FILE_CRITIC)
         torch.save(self.optimizer_actor.state_dict(), self.OPTIMIZER_ACTOR_FILE)
         torch.save(self.optimizer_critic.state_dict(), self.OPTIMIZER_CRITIC_FILE)
 
     def load_model(self):
-        if os.path.exists(self.MODEL_FILE_ACTOR) and os.path.exists(self.MODEL_FILE_CRITICS):
+        if os.path.exists(self.MODEL_FILE_ACTOR) and os.path.exists(self.MODEL_FILE_CRITIC):
             self.optimizer_actor.load_state_dict(torch.load(self.OPTIMIZER_ACTOR_FILE))
             self.optimizer_critic.load_state_dict(torch.load(self.OPTIMIZER_CRITIC_FILE))
             self.actor.load_state_dict(torch.load(self.MODEL_FILE_ACTOR))
-            self.critic.load_state_dict(torch.load(self.MODEL_FILE_CRITICS))
+            self.critic.load_state_dict(torch.load(self.MODEL_FILE_CRITIC))
