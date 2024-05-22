@@ -1,3 +1,4 @@
 USER	SELECTED	TRAIN_MODE	AGENT	ENV	TT	AGENT_CONFIG	ENV_CONFIGS	TT_CONFIGS
-GMwang	FALSE	TRUE	DQN	CartPole	TrainTest	ParamsCarPoleDQN	ParamsCarPoleEnv	ParamsCarPoleTT
-GMwang1	TRUE	TRUE	DQN	EnvFutures	TrainTest	ParamsFuturesDQN	ParamsFuturesEnv	ParamsFuturesTT
+CartPoleDQN	FALSE	TRUE	DQN	CartPole	TrainTest	ParamsCarPoleDQN	ParamsCarPoleEnv	ParamsCarPoleTT
+FuturesDQN	FALSE	TRUE	DQN	EnvFutures	TrainTest	ParamsFuturesDQN	ParamsFuturesEnv	ParamsFuturesTT
+FuturesDoubleDQN	TRUE	TRUE	DoubleDQN	EnvFutures	TrainTest	ParamsFuturesDQN	ParamsFuturesEnv	ParamsFuturesTT

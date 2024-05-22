@@ -47,6 +47,7 @@ class Controller(ControllerBase):
         if self.TRAIN_MODE:
             env = self.ENV(save_dir=self.OUTPUT_DIR, **self.ENV_CONFIGS)
         else:
+            self.ENV_CONFIGS['data_random_mode']=False
             env = self.ENV(render_mode='human', save_dir=self.OUTPUT_DIR, **self.ENV_CONFIGS)
         agent = self.AGENT(save_dir=self.OUTPUT_DIR, model_dir=self.SAVE_MODEL_DIR, **self.AGENT_CONFIG)
         tt = self.TT(agent=agent, env=env, save_dir=self.OUTPUT_DIR, **self.TT_CONFIGS)

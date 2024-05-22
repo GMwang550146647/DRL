@@ -109,7 +109,7 @@ class TrainTest(TrainTestBase):
                 self._env, self._agent, self._num_episodes, self._replay_buffer, self._minimal_size, self._batch_size)
 
     def test(self, epochs=10, time_interval=0.01, *args, **kwargs):
-        for i in tqdm(range(epochs)):
+        for i in tqdm(range(len(self._env))):
             truncated = False
             state, done, rew = self._env.reset()[0], False, 0
             while (not done and not truncated):
