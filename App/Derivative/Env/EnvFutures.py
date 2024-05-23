@@ -106,30 +106,30 @@ class EnvFutures(EnvBase):
         if action == 1:
             if self._pre_action == 1:
                 # 1.Keep Long Pos
-                reward = cur_data[BID_VIB_COL]
+                reward = cur_data[BID_VIB_NXT_COL]
             elif self._pre_action == 2:
                 # 2.Change From Short To Long Pos
-                reward = -cur_data[ASK_VIB_COL] - fee - cur_data[DIFF_AB_COL] - fee
+                reward = -cur_data[ASK_VIB_NXT_COL] - fee - cur_data[DIFF_AB_NXT_COL] - fee
             else:
                 # 3.Open Long Pos
-                reward = -cur_data[DIFF_AB_COL] - fee
+                reward = -cur_data[DIFF_AB_NXT_COL] - fee
         elif action == 2:
             if self._pre_action == 1:
                 # 4.Change From Long To Short Pos
-                reward = cur_data[BID_VIB_COL] - fee - cur_data[DIFF_AB_COL] - fee
+                reward = cur_data[BID_VIB_NXT_COL] - fee - cur_data[DIFF_AB_NXT_COL] - fee
             elif self._pre_action == 2:
                 # 5.Keep Short Pos
-                reward = -cur_data[ASK_VIB_COL]
+                reward = -cur_data[ASK_VIB_NXT_COL]
             else:
                 # 6.Open Short Pos
-                reward = -cur_data[DIFF_AB_COL] - fee
+                reward = -cur_data[DIFF_AB_NXT_COL] - fee
         else:
             if self._pre_action == 1:
                 # 7.Close Long Pos
-                reward = cur_data[BID_VIB_COL] - fee
+                reward = cur_data[BID_VIB_NXT_COL] - fee
             elif self._pre_action == 2:
                 # 8.CLose Short Pos
-                reward = -cur_data[ASK_VIB_COL] - fee
+                reward = -cur_data[ASK_VIB_NXT_COL] - fee
             else:
                 # 9.Keep 0 Pos
                 reward = 0

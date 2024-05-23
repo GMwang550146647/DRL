@@ -106,9 +106,12 @@ class DataProcess(FuturesBase):
             df_data[ASK_VIB_COL] = diff_a.shift(1).fillna(0)
             df_data[BID_VIB_COL] = diff_b.shift(1).fillna(0)
             diff_ab = (df_data[BUY_PRICE_COL] - df_data[SELL_PRICE_COL]).fillna(0) / base_price * self._EXP_TS
-            diff_ab = diff_ab.shift(1).fillna(0)
-            df_data[DIFF_AB_COL] = diff_ab
+            df_data[DIFF_AB_COL] = diff_ab.shift(1).fillna(0)
             df_data[FEE_COL] = fee
+
+            df_data[ASK_VIB_NXT_COL] = diff_a
+            df_data[BID_VIB_NXT_COL] = diff_b
+            df_data[DIFF_AB_NXT_COL] = diff_ab
 
             df_data[HIGH_COL] = (df_data[HIGH_PRICE_COL] - df_data[OPEN_PRICE_COL])/df_data[OPEN_PRICE_COL] * self._EXP_TS
             df_data[LOW_COL] = (df_data[LOW_PRICE_COL] - df_data[OPEN_PRICE_COL])/df_data[OPEN_PRICE_COL] * self._EXP_TS
@@ -134,6 +137,7 @@ class DataProcess(FuturesBase):
         all_columns = [
             UPDATE_TIME_COL, LAST_PRICE_COL,
             SPECIAL_TIME_COL,ASK_VIB_COL,BID_VIB_COL,DIFF_AB_COL,HIGH_COL,LOW_COL,CLOSE_COL,FEE_COL,
+            ASK_VIB_NXT_COL,BID_VIB_NXT_COL,DIFF_AB_NXT_COL,
             # OPEN_PRICE_COL, CLOSE_PRICE_COL, HIGH_PRICE_COL,LOW_PRICE_COL, ASK_PRICE1_COL, BID_PRICE1_COL, BUY_PRICE_COL, SELL_PRICE_COL
         ]
         # 1.Del Rows
