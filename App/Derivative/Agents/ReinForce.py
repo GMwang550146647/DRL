@@ -1,14 +1,7 @@
-from App.Base.AgentBase import AgentBase
-
-import random
-import gym
 import os
-import numpy as np
-import collections
-from tqdm import tqdm
 import torch
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
+from App.Base.AgentBase import AgentBase
 
 
 class PolicyNet(torch.nn.Module):
@@ -68,7 +61,7 @@ class ReinForce(AgentBase):
         self.optimizer.zero_grad()
         for i in reversed(range(len(reward_list))):  # 从最后一步算起
             reward = reward_list[i]
-            state = torch.tensor([state_list[i]],dtype=torch.float).to(self.device)
+            state = torch.tensor([state_list[i]], dtype=torch.float).to(self.device)
             action = torch.tensor([action_list[i]]).view(-1, 1).to(self.device)
             log_prob = torch.log(self.policy_net(state).gather(1, action))
             G = self.gamma * G + reward

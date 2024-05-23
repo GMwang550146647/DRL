@@ -4,4 +4,6 @@ FuturesDQN	FALSE	TRUE	DQN	EnvFutures	TrainTest	ParamsFuturesDQN	ParamsFuturesEnv
 FuturesDoubleDQN	FALSE	TRUE	DoubleDQN	EnvFutures	TrainTest	ParamsFuturesDQN	ParamsFuturesEnv	ParamsFuturesTT
 FuturesDuelingDQN	FALSE	TRUE	DuelingDQN	EnvFutures	TrainTest	ParamsFuturesDQN	ParamsFuturesEnv	ParamsFuturesTT
 FuturesReinForce	FALSE	TRUE	ReinForce	EnvFutures	TrainTest	ParamsFuturesReinForce	ParamsFuturesEnv	ParamsOnpolicyFuturesTT
-FuturesAC	TRUE	FALSE	ActorCritic	EnvFutures	TrainTest	ParamsFuturesAC	ParamsFuturesEnv	ParamsOnpolicyFuturesTT
+FuturesAC	FALSE	TRUE	ActorCritic	EnvFutures	TrainTest	ParamsFuturesAC	ParamsFuturesEnv	ParamsOnpolicyFuturesTT
+FuturesTRPO	FALSE	FALSE	TRPO	EnvFutures	TrainTest	ParamsFuturesTRPO	ParamsFuturesEnv	ParamsOnpolicyFuturesTT
+FuturesPPO	TRUE	FALSE	PPO	EnvFutures	TrainTest	ParamsFuturesPPO	ParamsFuturesEnv	ParamsOnpolicyFuturesTT

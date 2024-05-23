@@ -1,14 +1,9 @@
-from App.Base.AgentBase import AgentBase
-
-import random
-import gym
 import os
 import numpy as np
-import collections
-from tqdm import tqdm
 import torch
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
+from App.Base.AgentBase import AgentBase
+
 
 class Qnet(torch.nn.Module):
     ''' 只有一层隐藏层的Q网络 '''
@@ -27,7 +22,8 @@ class DQN(AgentBase):
     ''' DQN算法 '''
 
     def __init__(
-            self, state_dim, hidden_dim, action_dim, learning_rate,gamma, epsilon, target_update, device, save_dir, model_dir,
+            self, state_dim, hidden_dim, action_dim, learning_rate, gamma, epsilon, target_update, device, save_dir,
+            model_dir,
             *args, **kwargs
     ):
         """
