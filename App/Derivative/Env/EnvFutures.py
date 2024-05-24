@@ -12,12 +12,20 @@ from App.Utils.parallel_computing import MultiProcess
 from App.Configs.ConfigsFutures import *
 from App.Base.PlotBase import PlotBase
 
+class ActionSpace(gym.spaces.Space):
+    def __init__(self,n_space):
+        super().__init__()
+        self.n = n_space
+class ObservationSpace(gym.spaces.Space):
+    def __init__(self,n_osv):
+        super().__init__(shape = (n_osv,))
+
 class EnvFutures(EnvBase):
     def __init__(
-            self, file_pattern, data_random_mode=False, load_when_use=True, render_mode=None,save_dir=None,
+            self, file_pattern, data_random_mode=False, load_when_use=True, render_mode=None, save_dir=None,
             *args, **kwargs
     ):
-        super(EnvFutures, self).__init__(render_mode,save_dir,*args,**kwargs)
+        super(EnvFutures, self).__init__(render_mode, save_dir, *args, **kwargs)
         self._data_path = DATA_PATH
         self._load_when_use = load_when_use
         self._render_mode = render_mode
@@ -25,9 +33,18 @@ class EnvFutures(EnvBase):
         self._files = get_all_pattern_files(self._data_path, file_pattern)
         random.shuffle(self._files)
         self._N_FILES = len(self._files)
-        self._lt_dt_data = MultiProcess.multi_process(self._load_convert_dfdata2dict,self._files) if not load_when_use else []
+        self._lt_dt_data = MultiProcess.multi_process(self._load_convert_dfdata2dict,
+                                                      self._files) if not load_when_use else []
         self._CUR_FILE_IDX = 0
         self._LONG_SHORT_MODE = 0
+        self._features_cols = [
+            # SPECIAL_TIME_COL, ASK_VIB_COL, BID_VIB_COL, DIFF_AB_COL,
+            # HIGH_COL, LOW_COL, CLOSE_COL, MEAN_DEVIATION_COL,
+            GT_MIN_RATE_COL, LT_MAX_RATE_COL, PRICE_VIB_COL,
+            DIFF_PRICE_COL, TREND_COL
+        ]
+        self.action_space = ActionSpace(3)
+        self.observation_space = ObservationSpace(len(self._features_cols)+1)
 
     def __len__(self):
         return self._N_FILES
@@ -57,7 +74,7 @@ class EnvFutures(EnvBase):
         else:
             return data
 
-    def _load_convert_dfdata2dict(self,file_name):
+    def _load_convert_dfdata2dict(self, file_name):
         df_data = pd.read_csv(file_name)
         return list(df_data.T.to_dict().values())
 
@@ -73,7 +90,7 @@ class EnvFutures(EnvBase):
         self._pre_action = 0
         if self._render_mode:
             self.lt_action = []
-        return self.step(0)[0],None
+        return self.step(0)[0], None
 
     def step(self, action, *args, **kwargs):
         """
@@ -98,11 +115,10 @@ class EnvFutures(EnvBase):
         :param kwargs:
         :return:state, reward, done, truncated, None 五元组
         """
-        cur_data,done = self._get_next_data()
-        state = [cur_data[key_i] for key_i in
-                 [SPECIAL_TIME_COL, ASK_VIB_COL, BID_VIB_COL, DIFF_AB_COL, HIGH_COL, LOW_COL, CLOSE_COL]]
+        cur_data, done = self._get_next_data()
+        state = [cur_data[key_i] for key_i in self._features_cols]
         state = [action] + state
-        fee = cur_data[FEE_COL] * 5
+        fee = cur_data[FEE_COL] *5
         if action == 1:
             if self._pre_action == 1:
                 # 1.Keep Long Pos
@@ -135,10 +151,10 @@ class EnvFutures(EnvBase):
                 reward = 0
         self._pre_action = action
         if self._render_mode:
-            self.lt_action.append((action,reward))
+            self.lt_action.append((action, reward))
         return state, reward, done, None, None
 
-    def render(self,*args,**kwargs):
+    def render(self, *args, **kwargs):
         pass
 
     def display(self, *args, **kwargs):
@@ -161,8 +177,8 @@ class EnvFutures(EnvBase):
         new_df_data['NEG_REWARDS'] = -new_df_data['NEG_REWARDS']
         plot_cols = [LAST_PRICE_COL]
         bar_cols = ["BUY_VOL", "SELL_VOL"]
-        PlotBase().plot_bar_curve(new_df_data, plot_cols, bar_cols, self.OUTPUT_PATH, title=f"{cur_file}")
+        PlotBase().plot_bar_curve(new_df_data, plot_cols, bar_cols, self.OUTPUT_PATH, title=f"{cur_file}_{round(rewards[len(rewards)-1])}")
 
         plot_cols = [LAST_PRICE_COL]
         bar_cols = ["POS_REWARDS", "NEG_REWARDS"]
-        PlotBase().plot_bar_curve(new_df_data, plot_cols, bar_cols, self.OUTPUT_PATH, title=f"{cur_file}_reward")
+        PlotBase().plot_bar_curve(new_df_data, plot_cols, bar_cols, self.OUTPUT_PATH, title=f"{cur_file}_{round(rewards[len(rewards)-1])}_reward")

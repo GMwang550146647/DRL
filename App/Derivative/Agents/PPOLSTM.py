@@ -1,5 +1,6 @@
 import os
 import torch
+from torch import nn
 import torch.nn.functional as F
 
 from App.Base.AgentBase import AgentBase
@@ -19,29 +20,40 @@ class PolicyNet(torch.nn.Module):
     def __init__(self, state_dim, hidden_dim, action_dim):
         super(PolicyNet, self).__init__()
         self.fc1 = torch.nn.Linear(state_dim, hidden_dim)
-        self.fc2 = torch.nn.Linear(hidden_dim, hidden_dim)
-        self.fc3 = torch.nn.Linear(hidden_dim, action_dim)
+        self.fc2 = torch.nn.Linear(hidden_dim, action_dim)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        return F.softmax(self.fc3(x), dim=1)
+        return F.softmax(self.fc2(x), dim=1)
 
 
-class ValueNet(torch.nn.Module):
-    def __init__(self, state_dim, hidden_dim):
+# class ValueNet(torch.nn.Module):
+#     def __init__(self, state_dim, hidden_dim):
+#         super(ValueNet, self).__init__()
+#         self.fc1 = torch.nn.Linear(state_dim, hidden_dim)
+#         self.fc2 = torch.nn.Linear(hidden_dim, 1)
+#
+#     def forward(self, x):
+#         x = F.relu(self.fc1(x))
+#         return self.fc2(x)
+
+
+
+
+
+class ValueNet(nn.Module):
+    def __init__(self, state_dim, hidden_dim, num_layer=2):
         super(ValueNet, self).__init__()
-        self.fc1 = torch.nn.Linear(state_dim, hidden_dim)
-        self.fc2 = torch.nn.Linear(hidden_dim, hidden_dim)
-        self.fc3 = torch.nn.Linear(hidden_dim, 1)
+        self.layer1 = nn.LSTM(state_dim, hidden_dim, num_layer)
+        self.layer2 = nn.Linear(hidden_dim, 1)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        return self.fc3(x)
+        x, _ = self.layer1(x)
+        x = self.layer2(x)
+        return x
 
 
-class PPO(AgentBase):
+class PPOLSTM(AgentBase):
     ''' DQN算法 '''
 
     def __init__(
@@ -57,7 +69,7 @@ class PPO(AgentBase):
         :param target_update: update frequency of target_network
         :param device:
         """
-        super(PPO, self).__init__()
+        super(PPOLSTM, self).__init__()
         self.SAVE_DIR = save_dir
         self.MODEL_DIR = model_dir
         self.MODEL_FILE_ACTOR = os.path.join(self.MODEL_DIR, "actor_net.pth")

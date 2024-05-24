@@ -1,6 +1,7 @@
 from App.Base.AgentBase import AgentBase
 import copy
 import os
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -9,22 +10,26 @@ class PolicyNet(torch.nn.Module):
     def __init__(self, state_dim, hidden_dim, action_dim):
         super(PolicyNet, self).__init__()
         self.fc1 = torch.nn.Linear(state_dim, hidden_dim)
-        self.fc2 = torch.nn.Linear(hidden_dim, action_dim)
+        self.fc2 = torch.nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = torch.nn.Linear(hidden_dim, action_dim)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
-        return F.softmax(self.fc2(x), dim=1)
+        x = F.relu(self.fc2(x))
+        return F.softmax(self.fc3(x), dim=1)
 
 
 class ValueNet(torch.nn.Module):
     def __init__(self, state_dim, hidden_dim):
         super(ValueNet, self).__init__()
         self.fc1 = torch.nn.Linear(state_dim, hidden_dim)
-        self.fc2 = torch.nn.Linear(hidden_dim, 1)
+        self.fc2 = torch.nn.Linear(hidden_dim, hidden_dim)
+        self.fc3 = torch.nn.Linear(hidden_dim, 1)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
-        return self.fc2(x)
+        x = F.relu(self.fc2(x))
+        return self.fc3(x)
 
 
 def compute_advantage(gamma, lmbda, td_delta):
@@ -132,6 +137,9 @@ class TRPO(AgentBase):
         x = torch.zeros_like(grad)
         r = grad.clone()
         p = grad.clone()
+
+        r = torch.where(torch.isnan(r), torch.full_like(r, 0), r)
+        p = torch.where(torch.isnan(p), torch.full_like(p, 0), p)
         rdotr = torch.dot(r, r)
         for i in range(10):  # 共轭梯度主循环
             Hp = self.hessian_matrix_vector_product(states, old_action_dists, p)
@@ -144,6 +152,8 @@ class TRPO(AgentBase):
             beta = new_rdotr / rdotr
             p = r + beta * p
             rdotr = new_rdotr
+        if x.data[0].numpy() == np.nan:
+            a = 0
         return x
 
     def compute_surrogate_obj(self, states, actions, advantage, old_log_probs, actor):  # 计算策略目标

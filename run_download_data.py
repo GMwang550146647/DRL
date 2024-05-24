@@ -37,7 +37,7 @@ def sync_data(lt_futures):
 
 
 if __name__ == '__main__':
-    lt_futures = ["au"]
+    lt_futures = ["IF"]
     """1.download specific file"""
     # Years = ['2024']
     # Months = range(1, 13)

@@ -12,9 +12,9 @@ import logging
 class TrainTest(TrainTestBase):
     def __init__(
             self, agent, env, num_episodes, replay_buffer_cap, minimal_size=128, batch_size=16, on_policy=False,
-            *args, **kwargs
+            save_dir=None,*args, **kwargs
     ):
-        super().__init__(agent, env)
+        super().__init__(agent, env,save_dir=save_dir)
         self._env = env
         self._agent = agent
         self._num_episodes = num_episodes
@@ -35,10 +35,9 @@ class TrainTest(TrainTestBase):
         :param num_episodes:
         :return:
         """
-        return_list = []
         for i in range(100):
-            with tqdm(total=int(num_episodes / 10), desc='Iteration %d' % i) as pbar:
-                for i_episode in range(int(num_episodes / 10)):
+            with tqdm(total=int(num_episodes), desc='Iteration %d' % i) as pbar:
+                for i_episode in range(int(num_episodes)):
                     episode_return = 0
                     transition_dict = {'states': [], 'actions': [], 'next_states': [], 'rewards': [], 'dones': []}
                     state = env.reset()[0]
@@ -54,14 +53,15 @@ class TrainTest(TrainTestBase):
                         transition_dict['dones'].append(done)
                         state = next_state
                         episode_return += reward
-                    return_list.append(episode_return)
+                    self._return_list.append(episode_return)
                     agent.update(transition_dict)
                     if (i_episode + 1) % 10 == 0:
                         pbar.set_postfix({'episode': '%d' % (num_episodes / 10 * i + i_episode + 1),
-                                          'return': '%.3f' % np.mean(return_list[-10:])})
+                                          'return': '%.3f' % np.mean(self._return_list[-10:])})
                     pbar.update(1)
             self._agent.save_model()
-        return return_list
+            self.plot_reward()
+        return self._return_list
 
     def train_off_policy_agent(self, env, agent, num_episodes, replay_buffer, minimal_size, batch_size):
         """
@@ -71,10 +71,9 @@ class TrainTest(TrainTestBase):
         :param num_episodes:
         :return:
         """
-        return_list = []
         for i in range(100):
-            with tqdm(total=int(num_episodes / 10), desc='Iteration %d' % i) as pbar:
-                for i_episode in range(int(num_episodes / 10)):
+            with tqdm(total=int(num_episodes), desc='Iteration %d' % i) as pbar:
+                for i_episode in range(int(num_episodes)):
                     episode_return = 0
                     state = env.reset()[0]
                     done = False
@@ -91,13 +90,14 @@ class TrainTest(TrainTestBase):
                             transition_dict = {'states': b_s, 'actions': b_a, 'next_states': b_ns, 'rewards': b_r,'dones': b_d}
                             agent.update(transition_dict)
 
-                    return_list.append(episode_return)
+                    self._return_list.append(episode_return)
                     if (i_episode + 1) % 10 == 0:
                         pbar.set_postfix({'episode': '%d' % (num_episodes / 10 * i + i_episode + 1),
-                                          'return': '%.3f' % np.mean(return_list[-10:])})
+                                          'return': '%.3f' % np.mean(self._return_list[-10:])})
                     pbar.update(1)
             self._agent.save_model()
-        return return_list
+            self.plot_reward()
+        return self._return_list
 
     def train(self, *args, **kwargs):
         if self._on_policy:

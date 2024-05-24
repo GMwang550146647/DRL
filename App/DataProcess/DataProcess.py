@@ -168,12 +168,134 @@ class DataProcess(FuturesBase):
         # 3.Skipped Cols
         df_data = get_skipped_data(df_data, WIN_SIZE)
         df_data[AVG_PRICE_COL] = df_data[TURN_OVER_COL] / (df_data[VOLUME_COL] + CLOSE2ZERO) / NPL
+        df_data[ACC_AVG_PRICE_COL] = df_data[ACC_TURN_OVER_COL] / (df_data[ACC_VOLUME_COL] + CLOSE2ZERO) / NPL
 
         # 4.New Process
         cal_special_time(df_data)
         cal_env_variables(df_data)
 
+        # 5.New Features
+        new_cols = self.add_features(df_data)
+        new_cols2 = self.add_features2(df_data)
+
         # *.Final Process
-        all_columns = [col_i for col_i in all_columns if col_i in df_data.columns]
+        all_columns = [col_i for col_i in all_columns if col_i in df_data.columns] + new_cols +new_cols2
         df_data = df_data[all_columns].copy(deep=True)
         return df_data
+
+    def add_features(self,df_data):
+        WIN_SIZE=30
+        MEAN_DEVIATION_COL = "MEAN_DEVIATION"
+        GT_MIN_RATE_COL = "GT_MIN_RATE"
+        LT_MAX_RATE_COL = "LT_MAX_RATE"
+        PRICE_VIB_COL = "PRICE_VIB"
+        rolling_min = df_data[LAST_PRICE_COL].rolling(window=WIN_SIZE,min_periods=1).min()
+        rolling_max = df_data[LAST_PRICE_COL].rolling(window=WIN_SIZE,min_periods=1).max()
+        rolling_mean = df_data[LAST_PRICE_COL].rolling(window=WIN_SIZE,min_periods=1).mean()
+        rolling_var = df_data[LAST_PRICE_COL].rolling(window=WIN_SIZE,min_periods=1).var()
+        df_data[MEAN_DEVIATION_COL] = ((df_data[LAST_PRICE_COL]- df_data[ACC_AVG_PRICE_COL])/df_data[ACC_AVG_PRICE_COL]).fillna(0) * self._EXP_TS/10
+
+        df_data[GT_MIN_RATE_COL] = ((df_data[LAST_PRICE_COL]- rolling_min)/rolling_min).fillna(0) * self._EXP_TS/10
+        df_data[LT_MAX_RATE_COL] = ((rolling_max- df_data[LAST_PRICE_COL])/df_data[LAST_PRICE_COL]).fillna(0) * self._EXP_TS/10
+        df_data[PRICE_VIB_COL] = (rolling_var/rolling_mean).fillna(0) * self._EXP_TS/10
+
+        return [MEAN_DEVIATION_COL,GT_MIN_RATE_COL,LT_MAX_RATE_COL,PRICE_VIB_COL]
+
+    def add_features2(self, df_data, observe_t =12,min_amplitude=0.005,min_rate=0.1, *args, **kwargs):
+        def _cal_zigzag(df_data, min_amplitude=0.005,min_observe_t=20, min_rate=0.1):
+            def recombine_trend(lt_trend):
+                if len(lt_trend) >= 2:
+                    if lt_trend[-1]['rise'] == lt_trend[-2]['rise']:
+                        new_trend = {
+                            "start_pos": lt_trend[-2]['start_pos'],
+                            "end_pos": lt_trend[-1]['end_pos'],
+                            "start_val": lt_trend[-2]['start_val'],
+                            "end_val": lt_trend[-1]['end_val'],
+                            "cb_times": lt_trend[-2]['cb_times']+1,
+                            "rise": lt_trend[-1]['rise'],
+                        }
+                        lt_trend.pop()
+                        lt_trend.pop()
+                        lt_trend.append(new_trend)
+
+            def get_trend(start_pos, start_val, end_pos, end_val, rise,cb_times=1):
+                return {
+                    "start_pos": start_pos,
+                    "start_val": start_val,
+                    "end_pos": end_pos,
+                    "end_val": end_val,
+                    "cb_times": cb_times,
+                    "rise": rise,
+                }
+
+            price = df_data[LAST_PRICE_COL].to_list()
+            # cum_max = df_data[HIGH_PRICE_COL]
+            # cum_min = df_data[LOW_PRICE_COL]
+            cum_max = df_data[HIGH_PRICE_COL].cummax()
+            cum_min = df_data[LOW_PRICE_COL].cummin()
+            avg = (cum_max + cum_min) / 2
+            amplitude = (cum_max - cum_min) / avg
+            amplitude[amplitude < min_amplitude] = min_amplitude
+            min_pivot = (avg * amplitude * min_rate).to_list()
+            max_val = -1
+            min_val = 10000000
+            max_pos = -1
+            min_pos = -1
+            lt_trend = []
+            pre_end = price[0]
+            pre_end_pos = 0
+            cur_k=[0 for _ in price]
+            diff_price=[0 for _ in price]
+            for i, price_i in enumerate(price):
+                if price_i > max_val:
+                    max_val = price_i
+                    max_pos = i
+                if price_i < min_val:
+                    min_val = price_i
+                    min_pos = i
+                if max_val - pre_end >= min_pivot[i]:
+                    lt_trend.append(get_trend(pre_end_pos, pre_end, max_pos, max_val, True))
+                    max_val = price_i
+                    min_val = price_i
+                    max_pos = i
+                    min_pos = i
+                    pre_end = price_i
+                    pre_end_pos = i
+                elif pre_end - min_val >= min_pivot[i]:
+                    lt_trend.append(get_trend(pre_end_pos, pre_end, min_pos, min_val, False))
+                    max_val = price_i
+                    min_val = price_i
+                    max_pos = i
+                    min_pos = i
+                    pre_end = price_i
+                    pre_end_pos = i
+                recombine_trend(lt_trend)
+
+                if lt_trend:
+                    diff_price[i] = (price_i - lt_trend[-1]["start_val"])
+                    if i - lt_trend[-1]["start_pos"] > min_observe_t:
+                        # cur_k[i] = (price_i - lt_trend[-1]["start_val"])/(i - lt_trend[-1]["start_pos"])/avg[i] * EXPAND_TIMES * lt_trend[-1]["cb_times"]
+                        cur_k[i] = lt_trend[-1]["cb_times"]*(1 if (diff_price[i]>0) else -1)
+                else:
+                    cur_k[i] = 0
+                    diff_price[i] = 0
+
+            return pd.Series(cur_k),pd.Series(diff_price)
+
+
+        CLOSE2ZERO = 0.0000001
+        VERY_LARGE = 100000000
+        EXPAND_TIMES = 100000
+        item = df_data.loc[0, ITEM_COL]
+        BASE_PRICE = df_data.loc[0,LAST_PRICE_COL]
+        observe_t = int(observe_t)
+
+        signal,diff_price = _cal_zigzag(df_data,min_amplitude,observe_t,min_rate)
+
+        signal.fillna(0, inplace=True)
+        diff_price.fillna(0, inplace=True)
+        signal[:int(observe_t)] = 0
+        diff_price[:int(observe_t)] = 0
+        df_data[TREND_COL] = signal/3
+        df_data[DIFF_PRICE_COL] = diff_price/BASE_PRICE * self._EXP_TS/10
+        return [TREND_COL,DIFF_PRICE_COL]
