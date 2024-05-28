@@ -16,7 +16,9 @@ class PolicyNet(torch.nn.Module):
 
 
 class ReinForce(AgentBase):
-    ''' DQN算法 '''
+    """
+    reinforce算法
+    """
 
     def __init__(
             self, state_dim, hidden_dim, action_dim, learning_rate, gamma, target_update, device, save_dir, model_dir,
@@ -31,7 +33,7 @@ class ReinForce(AgentBase):
         :param target_update: update frequency of target_network
         :param device:
         """
-        super(ReinForce, self).__init__()
+        super(ReinForce, self).__init__(save_dir, model_dir)
         self.SAVE_DIR = save_dir
         self.MODEL_DIR = model_dir
         self.MODEL_FILE = os.path.join(self.MODEL_DIR, "dqn_net.pth")
@@ -44,6 +46,7 @@ class ReinForce(AgentBase):
         self.count = 0  # 计数器,记录更新次数
         self.device = device
         self.load_model()
+        self.loss_dict = {"reinforce_loss":[]}
 
     def take_action(self, state, *args, **kwargs):  # 根据动作概率分布随机采样
         state = torch.tensor([state], dtype=torch.float).to(self.device)
@@ -67,6 +70,7 @@ class ReinForce(AgentBase):
             G = self.gamma * G + reward
             loss = -log_prob * G  # 每一步的损失函数
             loss.backward()  # 反向传播计算梯度
+            self.loss_dict["reinforce_loss"].append(loss.item())
         self.optimizer.step()  # 梯度下降
 
     def save_model(self):

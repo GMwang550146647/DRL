@@ -44,7 +44,7 @@ def compute_advantage(gamma, lmbda, td_delta):
 
 
 class TRPO(AgentBase):
-    ''' DQN算法 '''
+    """ TPRO 算法 """
 
     def __init__(
             self, state_dim, hidden_dim, action_dim, lmbda, kl_constraint, alpha, critic_lr, gamma, target_update,
@@ -61,9 +61,7 @@ class TRPO(AgentBase):
         :param target_update: update frequency of target_network
         :param device:
         """
-        super(TRPO, self).__init__()
-        self.SAVE_DIR = save_dir
-        self.MODEL_DIR = model_dir
+        super(TRPO, self).__init__(save_dir, model_dir)
         self.MODEL_FILE_ACTOR = os.path.join(self.MODEL_DIR, "actor_net.pth")
         self.MODEL_FILE_CRITIC = os.path.join(self.MODEL_DIR, "critic_net.pth")
         self.OPTIMIZER_ACTOR_FILE = os.path.join(self.MODEL_DIR, "opt_actor.pth")
@@ -80,6 +78,7 @@ class TRPO(AgentBase):
         self.count = 0  # 计数器,记录更新次数
         self.device = device
         self.load_model()
+        self.loss_dict = {"critic_loss": []}
 
     def take_action(self, state, *args, **kwargs):  # 根据动作概率分布随机采样
         state = torch.tensor([state], dtype=torch.float).to(self.device)
@@ -106,6 +105,7 @@ class TRPO(AgentBase):
         self.optimizer_critic.zero_grad()
         critic_loss.backward()
         self.optimizer_critic.step()  # 更新价值函数
+        self.loss_dict["critic_loss"].append(critic_loss.item())
         # 更新策略函数
         self.policy_learn(states, actions, old_action_dists, old_log_probs, advantage)
 

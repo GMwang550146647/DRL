@@ -42,7 +42,9 @@ class ValueNet(torch.nn.Module):
 
 
 class PPO(AgentBase):
-    ''' DQN算法 '''
+    """
+    PPO 算法
+    """
 
     def __init__(
             self, state_dim, hidden_dim, action_dim, actor_lr, critic_lr, lmbda, epochs, eps, gamma, device, save_dir, model_dir,
@@ -57,7 +59,7 @@ class PPO(AgentBase):
         :param target_update: update frequency of target_network
         :param device:
         """
-        super(PPO, self).__init__()
+        super(PPO, self).__init__(save_dir, model_dir)
         self.SAVE_DIR = save_dir
         self.MODEL_DIR = model_dir
         self.MODEL_FILE_ACTOR = os.path.join(self.MODEL_DIR, "actor_net.pth")
@@ -76,6 +78,7 @@ class PPO(AgentBase):
         self.count = 0  # 计数器,记录更新次数
         self.device = device
         self.load_model()
+        self.loss_dict = {"actor_loss": [], "critic_loss": []}
 
     def take_action(self, state, *args, **kwargs):  # 根据动作概率分布随机采样
         state = torch.tensor([state], dtype=torch.float).to(self.device)
@@ -109,6 +112,9 @@ class PPO(AgentBase):
             critic_loss.backward()
             self.optimizer_actor.step()
             self.optimizer_critic.step()
+            self.loss_dict["actor_loss"].append(actor_loss.item())
+            self.loss_dict["critic_loss"].append(critic_loss.item())
+
 
     def save_model(self):
         torch.save(self.actor.state_dict(), self.MODEL_FILE_ACTOR)
