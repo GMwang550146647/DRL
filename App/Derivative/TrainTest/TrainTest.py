@@ -113,15 +113,15 @@ class TrainTest(TrainTestBase):
                         time_elapsed = time.time() - self.start_time
                         agent.logger.record("time/episodes", self._episode_count, exclude="tensorboard")
                         agent.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
-                        agent.logger.record("time/return", np.mean(return_list[-self.log_interval:]))
+                        agent.logger.record("time/return", np.mean(self._return_list[-self.log_interval:]))
                         for loss_name, loss_value in agent.loss_dict.items():
                             agent.logger.record(f"time/{loss_name}", np.mean(loss_value))
                         agent._reset_loss()
 
-                    return_list.append(episode_return)
+                    self._return_list.append(episode_return)
                     if self._episode_count % self.log_interval == 0:
                         pbar.set_postfix({'episode': '%d' % self._episode_count,
-                                          'return': '%.3f' % np.mean(return_list[-self.log_interval:])})
+                                          'return': '%.3f' % np.mean(self._return_list[-self.log_interval:])})
 
                     self._return_list.append(episode_return)
                     pbar.update(1)

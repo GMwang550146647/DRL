@@ -88,6 +88,8 @@ class EnvFutures(EnvBase):
         self._lt_cur_data = self._get_next_file_data()
         self._cur_data_idx = 0
         self._pre_action = 0
+        self._flag_tran = False
+        self._empty_tran_penalty = 50
         if self._render_mode:
             self.lt_action = []
         return self.step(0)[0], None
@@ -118,7 +120,7 @@ class EnvFutures(EnvBase):
         cur_data, done = self._get_next_data()
         state = [cur_data[key_i] for key_i in self._features_cols]
         state = [action] + state
-        fee = cur_data[FEE_COL] *5
+        fee = cur_data[FEE_COL] * 2
         if action == 1:
             if self._pre_action == 1:
                 # 1.Keep Long Pos
@@ -128,6 +130,7 @@ class EnvFutures(EnvBase):
                 reward = -cur_data[ASK_VIB_NXT_COL] - fee - cur_data[DIFF_AB_NXT_COL] - fee
             else:
                 # 3.Open Long Pos
+                self._flag_tran = True
                 reward = -cur_data[DIFF_AB_NXT_COL] - fee
         elif action == 2:
             if self._pre_action == 1:
@@ -138,6 +141,7 @@ class EnvFutures(EnvBase):
                 reward = -cur_data[ASK_VIB_NXT_COL]
             else:
                 # 6.Open Short Pos
+                self._flag_tran = True
                 reward = -cur_data[DIFF_AB_NXT_COL] - fee
         else:
             if self._pre_action == 1:
@@ -152,6 +156,8 @@ class EnvFutures(EnvBase):
         self._pre_action = action
         if self._render_mode:
             self.lt_action.append((action, reward))
+        if done and not self._flag_tran:
+            reward -= self._empty_tran_penalty
         return state, reward, done, None, None
 
     def render(self, *args, **kwargs):

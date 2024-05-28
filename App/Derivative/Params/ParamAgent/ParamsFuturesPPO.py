@@ -7,7 +7,7 @@ ParamsFuturesPPO = {
     "gamma": 0.98,
     "epochs": 10,
     "eps": 0.2,
-    "hidden_dim": 64,
+    "hidden_dim": 256,
     "target_update": 10,
     "device": torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
 }
