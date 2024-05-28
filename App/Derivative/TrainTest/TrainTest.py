@@ -18,6 +18,7 @@ class TrainTest(TrainTestBase):
         self._env = env
         self._agent = agent
         self._num_episodes = num_episodes
+        self._episode_count = 0
         self._replay_buffer = ReplayBuffer(replay_buffer_cap)
         self._minimal_size = minimal_size
         self._batch_size = batch_size
@@ -27,7 +28,7 @@ class TrainTest(TrainTestBase):
         np.random.seed(0)
         torch.manual_seed(0)
 
-    def train_on_policy_agent(self, env, agent, num_episodes):
+    def train_on_policy_agent(self, env, agent):
         """
         Yes, It Trains On Policy
         :param env:
@@ -35,10 +36,11 @@ class TrainTest(TrainTestBase):
         :param num_episodes:
         :return:
         """
+        self.start_time = time.time_ns()
         return_list = []
-        for i in range(100):
-            with tqdm(total=int(num_episodes / 10), desc='Iteration %d' % i) as pbar:
-                for i_episode in range(int(num_episodes / 10)):
+        for i in range(self.log_interval):
+            with tqdm(total=int(self._num_episodes / self.log_interval), desc='Iteration %d' % i) as pbar:
+                for i_episode in range(int(self._num_episodes / self.log_interval)):
                     episode_return = 0
                     transition_dict = {'states': [], 'actions': [], 'next_states': [], 'rewards': [], 'dones': []}
                     state = env.reset()[0]
@@ -56,14 +58,29 @@ class TrainTest(TrainTestBase):
                         episode_return += reward
                     return_list.append(episode_return)
                     agent.update(transition_dict)
-                    if (i_episode + 1) % 10 == 0:
-                        pbar.set_postfix({'episode': '%d' % (num_episodes / 10 * i + i_episode + 1),
-                                          'return': '%.3f' % np.mean(return_list[-10:])})
+
+                    self._episode_count += 1
+                    time_elapsed = time.time() - self.start_time
+                    agent.logger.record("time/episodes", self._episode_count, exclude="tensorboard")
+                    agent.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
+                    agent.logger.record("time/return", np.mean(return_list[-self.log_interval:]))
+                    for loss_name, loss_value in agent.loss_dict.items():
+                        agent.logger.record(f"time/{loss_name}", np.mean(loss_value))
+                    agent._reset_loss()
+
+                    if self._episode_count % self.log_interval == 0:
+                        pbar.set_postfix({'episode': '%d' % self._episode_count,
+                                          'return': '%.3f' % np.mean(return_list[-self.log_interval:])})
+
                     pbar.update(1)
+
+            # dump log every num_episodes / log_interval
+            agent.logger.dump(step=self._episode_count)
+            # TODO: check the performance and save the best model only
             self._agent.save_model()
         return return_list
 
-    def train_off_policy_agent(self, env, agent, num_episodes, replay_buffer, minimal_size, batch_size):
+    def train_off_policy_agent(self, env, agent):
         """
         Trains Off Policy
         :param env:
@@ -72,9 +89,9 @@ class TrainTest(TrainTestBase):
         :return:
         """
         return_list = []
-        for i in range(100):
-            with tqdm(total=int(num_episodes / 10), desc='Iteration %d' % i) as pbar:
-                for i_episode in range(int(num_episodes / 10)):
+        for i in range(self.log_interval):
+            with tqdm(total=int(self._num_episodes / self.log_interval), desc='Iteration %d' % i) as pbar:
+                for i_episode in range(int(self._num_episodes / self.log_interval)):
                     episode_return = 0
                     state = env.reset()[0]
                     done = False
@@ -83,28 +100,39 @@ class TrainTest(TrainTestBase):
                     while (not done) and (not truncated):
                         action = agent.take_action(state)
                         next_state, reward, done, truncated, _ = env.step(action)
-                        replay_buffer.add(state, action, reward, next_state, done)
+                        self._replay_buffer.add(state, action, reward, next_state, done)
                         state = next_state
                         episode_return += reward
-                        if replay_buffer.size() > minimal_size:
-                            b_s, b_a, b_r, b_ns, b_d = replay_buffer.sample(batch_size)
+                        if self._replay_buffer.size() > self._minimal_size:
+                            b_s, b_a, b_r, b_ns, b_d = self._replay_buffer.sample(self._batch_size)
                             transition_dict = {'states': b_s, 'actions': b_a, 'next_states': b_ns, 'rewards': b_r,'dones': b_d}
                             agent.update(transition_dict)
 
+                        self._episode_count += 1
+                        time_elapsed = time.time() - self.start_time
+                        agent.logger.record("time/episodes", self._episode_count, exclude="tensorboard")
+                        agent.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
+                        agent.logger.record("time/return", np.mean(return_list[-self.log_interval:]))
+                        for loss_name, loss_value in agent.loss_dict.items():
+                            agent.logger.record(f"time/{loss_name}", np.mean(loss_value))
+                        agent._reset_loss()
+
                     return_list.append(episode_return)
-                    if (i_episode + 1) % 10 == 0:
-                        pbar.set_postfix({'episode': '%d' % (num_episodes / 10 * i + i_episode + 1),
-                                          'return': '%.3f' % np.mean(return_list[-10:])})
+                    if self._episode_count % self.log_interval == 0:
+                        pbar.set_postfix({'episode': '%d' % self._episode_count,
+                                          'return': '%.3f' % np.mean(return_list[-self.log_interval:])})
                     pbar.update(1)
+
+            agent.logger.dump(step=self._episode_count)
+            # TODO: check the performance and save the best model only
             self._agent.save_model()
         return return_list
 
     def train(self, *args, **kwargs):
         if self._on_policy:
-            self.train_on_policy_agent(self._env, self._agent, self._num_episodes)
+            self.train_on_policy_agent(self._env, self._agent)
         else:
-            self.train_off_policy_agent(
-                self._env, self._agent, self._num_episodes, self._replay_buffer, self._minimal_size, self._batch_size)
+            self.train_off_policy_agent(self._env, self._agent)
 
     def test(self, epochs=10, time_interval=0.01, *args, **kwargs):
         for i in tqdm(range(len(self._env))):

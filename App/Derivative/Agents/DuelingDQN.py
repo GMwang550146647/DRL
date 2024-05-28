@@ -6,7 +6,9 @@ from App.Base.AgentBase import AgentBase
 
 
 class VAnet(torch.nn.Module):
-    ''' 只有一层隐藏层的A网络和V网络 '''
+    """
+    只有一层隐藏层的A网络和V网络
+    """
 
     def __init__(self, state_dim, hidden_dim, action_dim):
         super(VAnet, self).__init__()
@@ -22,7 +24,9 @@ class VAnet(torch.nn.Module):
 
 
 class DuelingDQN(AgentBase):
-    ''' DQN算法 '''
+    """
+    DuelingDQN 算法
+    """
 
     def __init__(
             self, state_dim, hidden_dim, action_dim, learning_rate, gamma, epsilon, target_update, device, save_dir,
@@ -39,9 +43,7 @@ class DuelingDQN(AgentBase):
         :param target_update: update frequency of target_network
         :param device:
         """
-        super(DuelingDQN, self).__init__()
-        self.SAVE_DIR = save_dir
-        self.MODEL_DIR = model_dir
+        super(DuelingDQN, self).__init__(save_dir, model_dir)
         self.MODEL_FILE = os.path.join(self.MODEL_DIR, "dqn_net.pth")
         self.OPTIMIZER_FILE = os.path.join(self.MODEL_DIR, "opt.pth")
         self.action_dim = action_dim
@@ -56,6 +58,7 @@ class DuelingDQN(AgentBase):
         self.count = 0  # 计数器,记录更新次数
         self.device = device
         self.load_model()
+        self.loss_dict = {"dqn_loss": []}
 
     def take_action(self, state, *args, **kwargs):  # epsilon-贪婪策略采取动作
         if np.random.random() < self.epsilon:
@@ -82,6 +85,7 @@ class DuelingDQN(AgentBase):
         self.optimizer.zero_grad()  # PyTorch中默认梯度会累积,这里需要显式将梯度置为0
         dqn_loss.backward()  # 反向传播更新参数
         self.optimizer.step()
+        self.loss_dict["dqn_loss"].append(dqn_loss.item())
 
         if self.count % self.target_update == 0:
             self.target_q_net.load_state_dict(self.q_net.state_dict())  # 更新目标网络

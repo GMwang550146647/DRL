@@ -28,7 +28,7 @@ class ValueNet(torch.nn.Module):
 
 
 class ActorCritic(AgentBase):
-    ''' DQN算法 '''
+    """ActorCritic算法"""
 
     def __init__(
             self, state_dim, hidden_dim, action_dim, actor_lr, critic_lr, gamma, target_update, device, save_dir,
@@ -44,9 +44,7 @@ class ActorCritic(AgentBase):
         :param target_update: update frequency of target_network
         :param device:
         """
-        super(ActorCritic, self).__init__()
-        self.SAVE_DIR = save_dir
-        self.MODEL_DIR = model_dir
+        super(ActorCritic, self).__init__(save_dir, model_dir)
         self.MODEL_FILE_ACTOR = os.path.join(self.MODEL_DIR, "actor_net.pth")
         self.MODEL_FILE_CRITIC = os.path.join(self.MODEL_DIR, "critic_net.pth")
         self.OPTIMIZER_ACTOR_FILE = os.path.join(self.MODEL_DIR, "opt_actor.pth")
@@ -61,6 +59,7 @@ class ActorCritic(AgentBase):
         self.count = 0  # 计数器,记录更新次数
         self.device = device
         self.load_model()
+        self.loss_dict = {"actor_loss": [], "critic_loss": []}
 
     def take_action(self, state, *args, **kwargs):  # 根据动作概率分布随机采样
         state = torch.tensor([state], dtype=torch.float).to(self.device)
@@ -89,6 +88,8 @@ class ActorCritic(AgentBase):
         critic_loss.backward()  # 计算价值网络的梯度
         self.optimizer_actor.step()  # 更新策略网络的参数
         self.optimizer_critic.step()  # 更新价值网络的参数
+        self.loss_dict["actor_loss"].append(actor_loss.item())
+        self.loss_dict["critic_loss"].append(critic_loss.item())
 
     def save_model(self):
         torch.save(self.actor.state_dict(), self.MODEL_FILE_ACTOR)

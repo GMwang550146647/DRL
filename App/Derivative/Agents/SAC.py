@@ -18,7 +18,9 @@ class PolicyNet(torch.nn.Module):
 
 
 class QValueNet(torch.nn.Module):
-    ''' 只有一层隐藏层的Q网络 '''
+    """
+    只有一层隐藏层的Q网络
+    """
     def __init__(self, state_dim, hidden_dim, action_dim):
         super(QValueNet, self).__init__()
         self.fc1 = torch.nn.Linear(state_dim, hidden_dim)
@@ -30,7 +32,9 @@ class QValueNet(torch.nn.Module):
 
 
 class SAC(AgentBase):
-    ''' DQN算法 '''
+    """
+    SAC
+    """
 
     def __init__(
             self, state_dim, hidden_dim, action_dim, actor_lr, critic_lr, alpha_lr, target_entropy, tau, gamma, device, save_dir,
@@ -46,9 +50,7 @@ class SAC(AgentBase):
         :param target_update: update frequency of target_network
         :param device:
         """
-        super(SAC, self).__init__()
-        self.SAVE_DIR = save_dir
-        self.MODEL_DIR = model_dir
+        super(SAC, self).__init__(save_dir, model_dir)
         self.MODEL_FILE_ACTOR = os.path.join(self.MODEL_DIR, "actor_net.pth")
         self.MODEL_FILE_CRITIC1 = os.path.join(self.MODEL_DIR, "critic_net1.pth")
         self.MODEL_FILE_CRITIC2 = os.path.join(self.MODEL_DIR, "critic_net2.pth")
@@ -80,6 +82,7 @@ class SAC(AgentBase):
         self.tau = tau
         self.device = device
         self.load_model()
+        self.loss_dict = {"actor_loss": [], "alpha_loss": []}
 
     def take_action(self, state, *args, **kwargs):  # 根据动作概率分布随机采样
         state = torch.tensor([state], dtype=torch.float).to(self.device)
@@ -126,6 +129,8 @@ class SAC(AgentBase):
         self.optimizer_log_alpha.zero_grad()
         alpha_loss.backward()
         self.optimizer_log_alpha.step()
+        self.loss_dict["actor_loss"].append(actor_loss.item())
+        self.loss_dict["alpha_loss"].append(alpha_loss.item())
 
         self.soft_update(self.critic_1, self.target_critic_1)
         self.soft_update(self.critic_2, self.target_critic_2)

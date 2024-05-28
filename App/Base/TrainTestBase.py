@@ -2,6 +2,8 @@ class TrainTestBase():
     def __init__(self, agent, env, *args, **kwargs):
         self._agent = agent
         self._env = env
+        self.log_interval = 10
+        self.start_time = 0
 
     def train(self, *args, **kwargs):
         """

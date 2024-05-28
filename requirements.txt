@@ -1,0 +1,10 @@
+gym~=0.26.2
+matplotlib~=3.5.2
+numpy~=1.24.4
+stable_baselines3==2.3.2
+tensorboard==2.14.0
+tensorboard-data-server==0.7.2
+tensorboardX=2.6.2.2
+torch==2.3.0
+torchvision==0.2.2
+
