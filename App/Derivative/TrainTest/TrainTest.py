@@ -12,9 +12,9 @@ import logging
 class TrainTest(TrainTestBase):
     def __init__(
             self, agent, env, num_episodes, replay_buffer_cap, minimal_size=128, batch_size=16, on_policy=False,
-            *args, **kwargs
+            save_dir=None,*args, **kwargs
     ):
-        super().__init__(agent, env)
+        super().__init__(agent, env,save_dir=save_dir)
         self._env = env
         self._agent = agent
         self._num_episodes = num_episodes
@@ -36,6 +36,7 @@ class TrainTest(TrainTestBase):
         :param num_episodes:
         :return:
         """
+
         self.start_time = time.time_ns()
         return_list = []
         for i in range(self.log_interval):
@@ -56,7 +57,7 @@ class TrainTest(TrainTestBase):
                         transition_dict['dones'].append(done)
                         state = next_state
                         episode_return += reward
-                    return_list.append(episode_return)
+                    self._return_list.append(episode_return)
                     agent.update(transition_dict)
 
                     self._episode_count += 1
@@ -78,7 +79,8 @@ class TrainTest(TrainTestBase):
             agent.logger.dump(step=self._episode_count)
             # TODO: check the performance and save the best model only
             self._agent.save_model()
-        return return_list
+            self.plot_reward()
+        return self._return_list
 
     def train_off_policy_agent(self, env, agent):
         """
@@ -88,7 +90,6 @@ class TrainTest(TrainTestBase):
         :param num_episodes:
         :return:
         """
-        return_list = []
         for i in range(self.log_interval):
             with tqdm(total=int(self._num_episodes / self.log_interval), desc='Iteration %d' % i) as pbar:
                 for i_episode in range(int(self._num_episodes / self.log_interval)):
@@ -121,12 +122,15 @@ class TrainTest(TrainTestBase):
                     if self._episode_count % self.log_interval == 0:
                         pbar.set_postfix({'episode': '%d' % self._episode_count,
                                           'return': '%.3f' % np.mean(return_list[-self.log_interval:])})
+
+                    self._return_list.append(episode_return)
                     pbar.update(1)
 
             agent.logger.dump(step=self._episode_count)
             # TODO: check the performance and save the best model only
             self._agent.save_model()
-        return return_list
+            self.plot_reward()
+        return self._return_list
 
     def train(self, *args, **kwargs):
         if self._on_policy:
