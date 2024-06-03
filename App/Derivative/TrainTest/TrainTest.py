@@ -38,7 +38,6 @@ class TrainTest(TrainTestBase):
         """
 
         self.start_time = time.time_ns()
-        return_list = []
         for i in range(self.log_interval):
             with tqdm(total=int(self._num_episodes / self.log_interval), desc='Iteration %d' % i) as pbar:
                 for i_episode in range(int(self._num_episodes / self.log_interval)):
@@ -64,14 +63,14 @@ class TrainTest(TrainTestBase):
                     time_elapsed = time.time() - self.start_time
                     agent.logger.record("time/episodes", self._episode_count, exclude="tensorboard")
                     agent.logger.record("time/time_elapsed", int(time_elapsed), exclude="tensorboard")
-                    agent.logger.record("time/return", np.mean(return_list[-self.log_interval:]))
+                    agent.logger.record("time/return", np.mean(self._return_list[-self.log_interval:]))
                     for loss_name, loss_value in agent.loss_dict.items():
                         agent.logger.record(f"time/{loss_name}", np.mean(loss_value))
                     agent._reset_loss()
 
                     if self._episode_count % self.log_interval == 0:
                         pbar.set_postfix({'episode': '%d' % self._episode_count,
-                                          'return': '%.3f' % np.mean(return_list[-self.log_interval:])})
+                                          'return': '%.3f' % np.mean(self._return_list[-self.log_interval:])})
 
                     pbar.update(1)
 
