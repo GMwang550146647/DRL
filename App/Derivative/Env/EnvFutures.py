@@ -1,4 +1,4 @@
-import gym
+
 import logging
 import random
 
@@ -11,14 +11,7 @@ from App.Utils.utils import get_all_pattern_files
 from App.Utils.parallel_computing import MultiProcess
 from App.Configs.ConfigsFutures import *
 from App.Base.PlotBase import PlotBase
-
-class ActionSpace(gym.spaces.Space):
-    def __init__(self,n_space):
-        super().__init__()
-        self.n = n_space
-class ObservationSpace(gym.spaces.Space):
-    def __init__(self,n_osv):
-        super().__init__(shape = (n_osv,))
+from gymnasium.spaces import Discrete,Box
 
 class EnvFutures(EnvBase):
     def __init__(
@@ -43,8 +36,8 @@ class EnvFutures(EnvBase):
             GT_MIN_RATE_COL, LT_MAX_RATE_COL, PRICE_VIB_COL,
             DIFF_PRICE_COL, TREND_COL
         ]
-        self.action_space = ActionSpace(3)
-        self.observation_space = ObservationSpace(len(self._features_cols)+1)
+        self.action_space = Discrete(3)
+        self.observation_space = Box(-1000,1000,shape = (len(self._features_cols)+1,),dtype=np.float32)
 
     def __len__(self):
         return self._N_FILES
@@ -92,7 +85,7 @@ class EnvFutures(EnvBase):
         self._empty_tran_penalty = 50
         if self._render_mode:
             self.lt_action = []
-        return self.step(0)[0], None
+        return self.step(0)[0], {}
 
     def step(self, action, *args, **kwargs):
         """
@@ -158,7 +151,7 @@ class EnvFutures(EnvBase):
             self.lt_action.append((action, reward))
         if done and not self._flag_tran:
             reward -= self._empty_tran_penalty
-        return state, reward, done, None, None
+        return state, reward, done, False, {}
 
     def render(self, *args, **kwargs):
         pass
